@@ -18,6 +18,7 @@ import java.awt.Cursor
 import javax.swing.DefaultListModel
 import javax.swing.JComponent
 import javax.swing.JLabel
+import javax.swing.JSplitPane
 
 class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true), DataProvider, Disposable {
 
@@ -46,7 +47,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
         println(styleMap)
 
-        return JLabel("FOO")
+        return JSplitPane(JSplitPane.VERTICAL_SPLIT, JLabel("First"), JLabel("Second"))
     }
 
     private fun refreshListModel() {
