@@ -1,5 +1,6 @@
 package com.github.shiraji.styleviewer.view
 
+import com.github.shiraji.styleviewer.data.Style
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
@@ -26,7 +27,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private val alarm = Alarm(Alarm.ThreadToUse.SHARED_THREAD)
 
-    private val styleMap: MutableMap<String, String?> = linkedMapOf()
+    private val styleMap: MutableMap<String, Style> = linkedMapOf()
 
     init {
 //        setToolbar(createToolbarPanel())
@@ -99,23 +100,25 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
     }
 
     private fun addToStyleMap(psiManager: PsiManager, virtualFile: VirtualFile, isInProject: Boolean, isInAndroidSdk: Boolean) {
-//        if (FILTER_XML.contains(virtualFile.name)) return
         val xmlFile = psiManager.findFile(virtualFile) as? XmlFile ?: return
         xmlFile.rootTag?.findSubTags("style")?.forEach {
-
-            it.getAttribute("name")?.value?.let {
-                name ->
-                val parent = it.getAttribute("parent")?.value
-                styleMap.put(name, parent)
+            styleTag ->
+            val values = mutableMapOf<String, String>()
+            styleTag.findSubTags("item").forEach {
+                itemTag ->
+                itemTag.getAttribute("name")?.value?.let {
+                    values.put(it, itemTag.value.text)
+                }
             }
 
-
-//            styleMap.put("R.color.${it.getAttribute("name")?.value}",
-//                    ColorManagerColorTag(
-//                            tag = it,
-//                            fileName = virtualFile.name,
-//                            isInProject = isInProject,
-//                            isInAndroidSdk = isInAndroidSdk))
+            styleTag.getAttribute("name")?.value?.let {
+                name ->
+                val style = Style(name = name,
+                        parent = styleTag.getAttribute("parent")?.value,
+                        filePath = xmlFile.name,
+                        values = values)
+                styleMap.put(name, style)
+            }
         }
     }
 
