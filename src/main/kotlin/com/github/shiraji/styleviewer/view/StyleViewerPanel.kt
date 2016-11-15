@@ -19,10 +19,7 @@ import com.intellij.ui.components.JBList
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import java.awt.Cursor
-import javax.swing.DefaultListModel
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JSplitPane
+import javax.swing.*
 
 class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true), DataProvider, Disposable {
 
@@ -48,12 +45,25 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private fun createContentPanel(): JComponent {
         refreshListModel()
-        val list = JBList(listModel)
-        list.fixedCellHeight = 48
-        ListSpeedSearch(list)
+        val secondLabel = JLabel("Choose style to see detail")
+        val list = JBList(listModel).init(secondLabel)
         val scrollPane = ScrollPaneFactory.createScrollPane(list)
+        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, secondLabel)
+    }
 
-        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, JLabel("Second"))
+    private fun JBList.init(secondLabel: JLabel) = apply {
+        fixedCellHeight = 48
+        ListSpeedSearch(this)
+        addListSelectionListener {
+            val name = selectedValue as? String
+            val style = styleMap[name]
+            secondLabel.text = if (style == null) {
+                "Choose style to see detail"
+            } else {
+                style.toString()
+            }
+        }
+        selectionMode = ListSelectionModel.SINGLE_SELECTION
     }
 
     private fun refreshListModel() {
