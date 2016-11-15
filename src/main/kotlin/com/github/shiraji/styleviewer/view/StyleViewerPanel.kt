@@ -13,6 +13,9 @@ import com.intellij.psi.PsiManager
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.ProjectScope
 import com.intellij.psi.xml.XmlFile
+import com.intellij.ui.ListSpeedSearch
+import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.components.JBList
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import java.awt.Cursor
@@ -45,10 +48,12 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private fun createContentPanel(): JComponent {
         refreshListModel()
+        val list = JBList(listModel)
+        list.fixedCellHeight = 48
+        ListSpeedSearch(list)
+        val scrollPane = ScrollPaneFactory.createScrollPane(list)
 
-        println(styleMap)
-
-        return JSplitPane(JSplitPane.VERTICAL_SPLIT, JLabel("First"), JLabel("Second"))
+        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, JLabel("Second"))
     }
 
     private fun refreshListModel() {
@@ -72,7 +77,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private fun reloadListModel() {
         listModel.removeAllElements()
-        val keys = styleMap.keys.sorted() //if (sortAsc) styleMap.keys.sorted() else styleMap.keys
+        val keys = styleMap.keys //if (sortAsc) styleMap.keys.sorted() else styleMap.keys
         keys.forEach {
             listModel.addElement(it)
         }
@@ -84,19 +89,9 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
     }
 
     private fun initStyleMap() {
-        val psiManager = PsiManager.getInstance(project)
-
         FileTypeIndex.getFiles(XmlFileType.INSTANCE, ProjectScope.getAllScope(project)).forEach {
-            addToStyleMap(psiManager, it, true, false)
+            addToStyleMap(PsiManager.getInstance(project), it, true, false)
         }
-
-//        if (!filterLibRes) {
-//            FileTypeIndex.getFiles(XmlFileType.INSTANCE, ProjectScope.getLibrariesScope(project)).forEach {
-//                addToStyleMap(psiManager, it, isInProject = false, isInAndroidSdk = it.path.contains(androidSdkPathRegex))
-//            }
-//        }
-//
-//        generateColors()
     }
 
     private fun addToStyleMap(psiManager: PsiManager, virtualFile: VirtualFile, isInProject: Boolean, isInAndroidSdk: Boolean) {
