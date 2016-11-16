@@ -4,9 +4,7 @@ import com.github.shiraji.styleviewer.data.Style
 import com.github.shiraji.styleviewer.data.StyleValue
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DataProvider
-import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
@@ -18,7 +16,6 @@ import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBList
 import com.intellij.util.Alarm
-import com.intellij.util.ui.JBUI
 import java.awt.Cursor
 import javax.swing.DefaultListModel
 import javax.swing.JComponent
@@ -39,24 +36,25 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
         setContent(createContentPanel())
     }
 
-    private fun createToolbarPanel(): JComponent? {
-        val group = DefaultActionGroup()
+//    private fun createToolbarPanel(): JComponent? {
+//        val group = DefaultActionGroup()
 //        group.add(RefreshAction())
 //        group.add(FilterAction())
 //        group.add(SortAscAction())
-        val actionToolBar = ActionManager.getInstance().createActionToolbar("Style", group, true)
-        return JBUI.Panels.simplePanel(actionToolBar.component)
-    }
+//        val actionToolBar = ActionManager.getInstance().createActionToolbar("Style", group, true)
+//        return JBUI.Panels.simplePanel(actionToolBar.component)
+//    }
 
     private fun createContentPanel(): JComponent {
         refreshListModel()
-
         val detailPanel = StyleViewerDetailPanel()
         detailPanel.rootPanel.isVisible = false
-
         val list = JBList(listModel).init(detailPanel)
         val scrollPane = ScrollPaneFactory.createScrollPane(list)
-        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, detailPanel.rootPanel)
+        val detailScrollPanel = StyleViewerDetailScrollPanel()
+        detailScrollPanel.rootPanel.add(detailPanel.rootPanel)
+        val scrollPane2 = ScrollPaneFactory.createScrollPane(detailScrollPanel.rootPanel)
+        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, scrollPane2)
     }
 
     private fun JBList.init(detailPanel: StyleViewerDetailPanel) = apply {
