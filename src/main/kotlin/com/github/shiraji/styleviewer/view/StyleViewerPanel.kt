@@ -1,6 +1,7 @@
 package com.github.shiraji.styleviewer.view
 
 import com.github.shiraji.styleviewer.data.Style
+import com.github.shiraji.styleviewer.data.StyleValue
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
@@ -19,7 +20,11 @@ import com.intellij.ui.components.JBList
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import java.awt.Cursor
-import javax.swing.*
+import javax.swing.DefaultListModel
+import javax.swing.JComponent
+import javax.swing.JSplitPane
+import javax.swing.ListSelectionModel
+import javax.swing.table.DefaultTableModel
 
 class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true), DataProvider, Disposable {
 
@@ -45,22 +50,33 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private fun createContentPanel(): JComponent {
         refreshListModel()
-        val secondLabel = JLabel("Choose style to see detail")
-        val list = JBList(listModel).init(secondLabel)
+
+        val detailPanel = StyleViewerDetailPanel()
+        detailPanel.rootPanel.isVisible = false
+
+        val list = JBList(listModel).init(detailPanel)
         val scrollPane = ScrollPaneFactory.createScrollPane(list)
-        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, secondLabel)
+        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, detailPanel.rootPanel)
     }
 
-    private fun JBList.init(secondLabel: JLabel) = apply {
+    private fun JBList.init(detailPanel: StyleViewerDetailPanel) = apply {
         fixedCellHeight = 48
         ListSpeedSearch(this)
         addListSelectionListener {
             val name = selectedValue as? String
             val style = styleMap[name]
-            secondLabel.text = if (style == null) {
-                "Choose style to see detail"
+            if (style == null) {
+                detailPanel.rootPanel.isVisible = false
+                detailPanel.styleName.text = "Choose style to see detail"
             } else {
-                style.toString()
+                detailPanel.rootPanel.isVisible = true
+                detailPanel.styleName.text = name
+
+                val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
+                style.values.forEach {
+                    tableModel.insertRow(0, arrayOf(it.name, it.value))
+                }
+                detailPanel.valueTable.model = tableModel
             }
         }
         selectionMode = ListSelectionModel.SINGLE_SELECTION
@@ -108,11 +124,11 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
         val xmlFile = psiManager.findFile(virtualFile) as? XmlFile ?: return
         xmlFile.rootTag?.findSubTags("style")?.forEach {
             styleTag ->
-            val values = mutableMapOf<String, String>()
+            val values = mutableListOf<StyleValue>()
             styleTag.findSubTags("item").forEach {
                 itemTag ->
                 itemTag.getAttribute("name")?.value?.let {
-                    values.put(it, itemTag.value.text)
+                    values.add(StyleValue(it, itemTag.value.text))
                 }
             }
 
