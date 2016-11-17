@@ -55,41 +55,40 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
             fixedCellHeight = 48
             ListSpeedSearch(this)
             addListSelectionListener {
+                val addedStyle = mutableListOf<String>()
+                
+                panel.removeAll()
                 val name = selectedValue as? String
-                val style = styleMap[name]
-                if (style == null) {
-                    detailPanel.rootPanel.isVisible = false
-                    detailPanel.styleName.text = "Choose style to see detail"
-                } else {
-                    detailPanel.rootPanel.isVisible = true
-                    detailPanel.styleName.text = name
-
-                    val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
-                    style.values.forEach {
-                        tableModel.insertRow(0, arrayOf(it.name, it.value))
-                    }
-                    detailPanel.valueTable.model = tableModel
-                    panel.add(detailPanel.rootPanel)
-
-
-                    styleMap[style.parent]?.let {
-                        val detailPanel2 = StyleViewerDetailPanel()
-                        detailPanel2.styleName.text = it.name
-                        val tableModel2 = DefaultTableModel(arrayOf("name", "value"), 0)
-                        style.values.forEach {
-                            tableModel2.insertRow(0, arrayOf(it.name, it.value))
-                        }
-                        detailPanel2.valueTable.model = tableModel2
-                        panel.add(detailPanel2.rootPanel)
-                    }
-
-                }
+                styleMap[name]?.addDetailToPanel(addedStyle, panel)
+                panel.revalidate()
             }
             selectionMode = ListSelectionModel.SINGLE_SELECTION
         }
         val scrollPane = ScrollPaneFactory.createScrollPane(list)
         val scrollPane2 = ScrollPaneFactory.createScrollPane(panel)
         return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, scrollPane2)
+    }
+
+    private fun Style.addDetailToPanel(addedStyle: MutableList<String>, panel: JPanel) {
+        // ignore the style that is already added
+        // avoid infinite loop
+        if (addedStyle.contains(name)) return
+        addedStyle.add(name)
+
+        val detailPanel = StyleViewerDetailPanel()
+        detailPanel.styleName.text = name
+        val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
+        values.forEach {
+            tableModel.insertRow(0, arrayOf(it.name, it.value))
+        }
+        detailPanel.valueTable.model = tableModel
+        panel.add(detailPanel.rootPanel)
+
+        // inherit by name
+        styleMap[name.substringBeforeLast(".")]?.addDetailToPanel(addedStyle, panel)
+
+        // inherit by parent tag
+        styleMap[parent]?.addDetailToPanel(addedStyle, panel)
     }
 
     private fun refreshListModel() {
