@@ -17,10 +17,7 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBList
 import com.intellij.util.Alarm
 import java.awt.Cursor
-import javax.swing.DefaultListModel
-import javax.swing.JComponent
-import javax.swing.JSplitPane
-import javax.swing.ListSelectionModel
+import javax.swing.*
 import javax.swing.table.DefaultTableModel
 
 class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true), DataProvider, Disposable {
@@ -49,35 +46,47 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
         refreshListModel()
         val detailPanel = StyleViewerDetailPanel()
         detailPanel.rootPanel.isVisible = false
-        val list = JBList(listModel).init(detailPanel)
-        val scrollPane = ScrollPaneFactory.createScrollPane(list)
-        val detailScrollPanel = StyleViewerDetailScrollPanel()
-        detailScrollPanel.rootPanel.add(detailPanel.rootPanel)
-        val scrollPane2 = ScrollPaneFactory.createScrollPane(detailScrollPanel.rootPanel)
-        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, scrollPane2)
-    }
 
-    private fun JBList.init(detailPanel: StyleViewerDetailPanel) = apply {
-        fixedCellHeight = 48
-        ListSpeedSearch(this)
-        addListSelectionListener {
-            val name = selectedValue as? String
-            val style = styleMap[name]
-            if (style == null) {
-                detailPanel.rootPanel.isVisible = false
-                detailPanel.styleName.text = "Choose style to see detail"
-            } else {
-                detailPanel.rootPanel.isVisible = true
-                detailPanel.styleName.text = name
+        val detailPanel2 = StyleViewerDetailPanel()
+        detailPanel2.rootPanel.isVisible = false
 
-                val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
-                style.values.forEach {
-                    tableModel.insertRow(0, arrayOf(it.name, it.value))
+
+        val list = JBList(listModel).apply {
+            fixedCellHeight = 48
+            ListSpeedSearch(this)
+            addListSelectionListener {
+                val name = selectedValue as? String
+                val style = styleMap[name]
+                if (style == null) {
+                    detailPanel.rootPanel.isVisible = false
+                    detailPanel.styleName.text = "Choose style to see detail"
+                    detailPanel2.rootPanel.isVisible = false
+                    detailPanel2.styleName.text = "Choose style to see detail"
+                } else {
+                    detailPanel.rootPanel.isVisible = true
+                    detailPanel.styleName.text = name
+                    detailPanel2.rootPanel.isVisible = true
+                    detailPanel2.styleName.text = name
+
+                    val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
+                    style.values.forEach {
+                        tableModel.insertRow(0, arrayOf(it.name, it.value))
+                    }
+                    detailPanel.valueTable.model = tableModel
+                    detailPanel2.valueTable.model = tableModel
                 }
-                detailPanel.valueTable.model = tableModel
             }
+            selectionMode = ListSelectionModel.SINGLE_SELECTION
         }
-        selectionMode = ListSelectionModel.SINGLE_SELECTION
+        val scrollPane = ScrollPaneFactory.createScrollPane(list)
+
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        panel.add(detailPanel.rootPanel)
+        panel.add(detailPanel2.rootPanel)
+
+        val scrollPane2 = ScrollPaneFactory.createScrollPane(panel)
+        return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, scrollPane2)
     }
 
     private fun refreshListModel() {
