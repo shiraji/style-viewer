@@ -56,7 +56,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
             ListSpeedSearch(this)
             addListSelectionListener {
                 val addedStyle = mutableListOf<String>()
-                
+
                 panel.removeAll()
                 val name = selectedValue as? String
                 styleMap[name]?.addDetailToPanel(addedStyle, panel)
@@ -125,11 +125,11 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private fun initStyleMap() {
         FileTypeIndex.getFiles(XmlFileType.INSTANCE, ProjectScope.getAllScope(project)).forEach {
-            addToStyleMap(PsiManager.getInstance(project), it, true, false)
+            addToStyleMap(PsiManager.getInstance(project), it)
         }
     }
 
-    private fun addToStyleMap(psiManager: PsiManager, virtualFile: VirtualFile, isInProject: Boolean, isInAndroidSdk: Boolean) {
+    private fun addToStyleMap(psiManager: PsiManager, virtualFile: VirtualFile) {
         val xmlFile = psiManager.findFile(virtualFile) as? XmlFile ?: return
         xmlFile.rootTag?.findSubTags("style")?.forEach {
             styleTag ->
