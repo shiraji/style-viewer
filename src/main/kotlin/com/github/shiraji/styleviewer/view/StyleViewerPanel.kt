@@ -47,9 +47,9 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
         val detailPanel = StyleViewerDetailPanel()
         detailPanel.rootPanel.isVisible = false
 
-        val detailPanel2 = StyleViewerDetailPanel()
-        detailPanel2.rootPanel.isVisible = false
-
+        val panel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        }
 
         val list = JBList(listModel).apply {
             fixedCellHeight = 48
@@ -60,31 +60,34 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
                 if (style == null) {
                     detailPanel.rootPanel.isVisible = false
                     detailPanel.styleName.text = "Choose style to see detail"
-                    detailPanel2.rootPanel.isVisible = false
-                    detailPanel2.styleName.text = "Choose style to see detail"
                 } else {
                     detailPanel.rootPanel.isVisible = true
                     detailPanel.styleName.text = name
-                    detailPanel2.rootPanel.isVisible = true
-                    detailPanel2.styleName.text = name
 
                     val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
                     style.values.forEach {
                         tableModel.insertRow(0, arrayOf(it.name, it.value))
                     }
                     detailPanel.valueTable.model = tableModel
-                    detailPanel2.valueTable.model = tableModel
+                    panel.add(detailPanel.rootPanel)
+
+
+                    styleMap[style.parent]?.let {
+                        val detailPanel2 = StyleViewerDetailPanel()
+                        detailPanel2.styleName.text = it.name
+                        val tableModel2 = DefaultTableModel(arrayOf("name", "value"), 0)
+                        style.values.forEach {
+                            tableModel2.insertRow(0, arrayOf(it.name, it.value))
+                        }
+                        detailPanel2.valueTable.model = tableModel2
+                        panel.add(detailPanel2.rootPanel)
+                    }
+
                 }
             }
             selectionMode = ListSelectionModel.SINGLE_SELECTION
         }
         val scrollPane = ScrollPaneFactory.createScrollPane(list)
-
-        val panel = JPanel()
-        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
-        panel.add(detailPanel.rootPanel)
-        panel.add(detailPanel2.rootPanel)
-
         val scrollPane2 = ScrollPaneFactory.createScrollPane(panel)
         return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, scrollPane2)
     }
