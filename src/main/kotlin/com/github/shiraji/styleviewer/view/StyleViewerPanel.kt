@@ -5,6 +5,7 @@ import com.github.shiraji.styleviewer.data.StyleValue
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.DataProvider
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
@@ -43,7 +44,10 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 //    }
 
     private fun createContentPanel(): JComponent {
-        refreshListModel()
+        ApplicationManager.getApplication().invokeLater {
+            refreshListModel()
+        }
+
         val detailPanel = StyleViewerDetailPanel()
         detailPanel.rootPanel.isVisible = false
 
