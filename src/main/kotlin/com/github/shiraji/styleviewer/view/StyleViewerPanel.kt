@@ -27,7 +27,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
     private val alarm = Alarm(Alarm.ThreadToUse.SHARED_THREAD)
 
-    private val styleMap: MutableMap<String, Style> = linkedMapOf()
+    private val styleMap: MutableMap<String, MutableList<Style>> = linkedMapOf()
 
     init {
 //        setToolbar(createToolbarPanel())
@@ -63,7 +63,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
                 panel.removeAll()
                 val name = selectedValue as? String
-                styleMap[name]?.addDetailToPanel(addedStyle, panel)
+                styleMap[name]?.addDetailToPanel(name!!, addedStyle, panel)
                 panel.revalidate()
             }
             selectionMode = ListSelectionModel.SINGLE_SELECTION
@@ -73,7 +73,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
         return JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, scrollPane2)
     }
 
-    private fun Style.addDetailToPanel(addedStyle: MutableList<String>, panel: JPanel) {
+    private fun MutableList<Style>.addDetailToPanel(name: String, addedStyle: MutableList<String>, panel: JPanel) {
         // ignore the style that is already added
         // avoid infinite loop
         if (addedStyle.contains(name)) return
@@ -81,10 +81,24 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
         val detailPanel = StyleViewerDetailPanel()
         detailPanel.styleName.text = name
-        val tableModel = DefaultTableModel(arrayOf("name", "value"), 0)
-        values.forEach {
-            tableModel.insertRow(0, arrayOf(it.name, it.value))
+
+        val tableModel = DefaultTableModel()
+
+        forEach {
+            if (it.hasVersion()) {
+                tableModel.addColumn("key (${it.version})")
+            } else {
+                tableModel.addColumn("key")
+            }
+            tableModel.addColumn("value")
+
+
+            it.values.forEach {
+                tableModel.insertRow(0, arrayOf(it.name, it.value))
+            }
         }
+
+
         detailPanel.valueTable.model = tableModel
         panel.add(detailPanel.rootPanel)
 
@@ -147,11 +161,24 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
             styleTag.getAttribute("name")?.value?.let {
                 name ->
+                val styles = styleMap[name] ?: mutableListOf<Style>()
+
+                val version = try {
+                    println(xmlFile.name.substringAfter("-"))
+
+                    TODO("ここ確認")
+                    xmlFile.name.substringAfter("-").toInt()
+                } catch (e: NumberFormatException) {
+                    0
+                }
+
                 val style = Style(name = name,
                         parent = styleTag.getAttribute("parent")?.value,
-                        filePath = xmlFile.name,
+                        tag = styleTag,
+                        version = version,
                         values = values)
-                styleMap.put(name, style)
+                styles.add(style)
+                styleMap.put(name, styles)
             }
         }
     }
