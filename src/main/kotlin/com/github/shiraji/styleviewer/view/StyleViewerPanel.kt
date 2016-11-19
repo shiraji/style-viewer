@@ -96,7 +96,7 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
             maxRows = it.values.size.coerceAtLeast(maxRows)
         }
 
-        (0..maxRows).forEach {
+        (0 until maxRows).forEach {
             index ->
             val rowData = mutableListOf<String>()
             forEach {
