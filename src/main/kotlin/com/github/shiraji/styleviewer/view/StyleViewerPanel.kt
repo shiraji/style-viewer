@@ -84,6 +84,8 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
 
         val tableModel = DefaultTableModel()
 
+        var maxRows = 0
+
         forEach {
             if (it.hasVersion()) {
                 tableModel.addColumn("key (${it.version})")
@@ -91,22 +93,33 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
                 tableModel.addColumn("key")
             }
             tableModel.addColumn("value")
-
-
-            it.values.forEach {
-                tableModel.insertRow(0, arrayOf(it.name, it.value))
-            }
+            maxRows = it.values.size.coerceAtLeast(maxRows)
         }
 
+        (0..maxRows).forEach {
+            index ->
+            val rowData = mutableListOf<String>()
+            forEach {
+                val value = it.values.getOrNull(index)
+                if (value == null) {
+                    rowData.add("")
+                    rowData.add("")
+                } else {
+                    rowData.add(value.name)
+                    rowData.add(value.value)
+                }
+            }
+            tableModel.insertRow(index, rowData.toTypedArray())
+        }
 
         detailPanel.valueTable.model = tableModel
         panel.add(detailPanel.rootPanel)
 
-        // inherit by name
-        styleMap[name.substringBeforeLast(".")]?.addDetailToPanel(addedStyle, panel)
-
         // inherit by parent tag
-        styleMap[parent]?.addDetailToPanel(addedStyle, panel)
+        styleMap[parent.name]?.addDetailToPanel(name, addedStyle, panel)
+
+        // inherit by name
+        styleMap[name.substringBeforeLast(".")]?.addDetailToPanel(name, addedStyle, panel)
     }
 
     private fun refreshListModel() {
@@ -162,12 +175,11 @@ class StyleViewerPanel(val project: Project) : SimpleToolWindowPanel(true, true)
             styleTag.getAttribute("name")?.value?.let {
                 name ->
                 val styles = styleMap[name] ?: mutableListOf<Style>()
-
                 val version = try {
-                    println(xmlFile.name.substringAfter("-"))
-
-                    TODO("ここ確認")
-                    xmlFile.name.substringAfter("-").toInt()
+                    xmlFile.name                      // values-ldltr-v21.xml
+                            .substringAfterLast("-v") // 21.xml
+                            .substringBeforeLast(".") // 21
+                            .toInt()
                 } catch (e: NumberFormatException) {
                     0
                 }
